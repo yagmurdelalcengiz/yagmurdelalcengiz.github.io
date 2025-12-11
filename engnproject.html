@@ -6,10 +6,25 @@
 
   <div style="position:relative;height:90px;margin-bottom:10px;">
     <div style="position:absolute;left:0;top:18px;font-size:40px;">📡</div>
-    <div id="wave" style="position:absolute;left:60px;right:60px;top:28px;height:34px;
-         background:repeating-linear-gradient(90deg, rgba(0,140,255,0.85) 0 8px, rgba(0,140,255,0.18) 8px 16px);
-         border-radius:10px; animation:waveMove 1s linear infinite;"></div>
-    <div id="rx" style="position:absolute;right:0;top:18px;font-size:40px;transform: scaleX(-3);"> 📡</div>
+<!-- Simple animated sine wave -->
+<svg id="sinewave" width="100%" height="60" viewBox="0 0 300 60"
+     style="position:absolute; left:60px; right:60px; top:28px;">
+  <path id="wavePath"
+        d="M0 30 Q 25 0, 50 30 T 100 30 T 150 30 T 200 30 T 250 30 T 300 30"
+        stroke="rgba(0,140,255,0.85)"
+        stroke-width="3"
+        fill="none">
+    <animate attributeName="d"
+             dur="1.8s"
+             repeatCount="indefinite"
+             values="
+               M0 30 Q 25 0, 50 30 T 100 30 T 150 30 T 200 30 T 250 30 T 300 30;
+               M0 30 Q 25 60, 50 30 T 100 30 T 150 30 T 200 30 T 250 30 T 300 30;
+               M0 30 Q 25 0, 50 30 T 100 30 T 150 30 T 200 30 T 250 30 T 300 30
+             " />
+  </path>
+</svg>
+    <div id="rx" style="position:absolute;right:0;top:18px;font-size:40px;"> 📡</div>
   </div>
   <style>
     @keyframes waveMove{from{background-position:0 0}to{background-position:32px 0}}
