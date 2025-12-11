@@ -1,108 +1,178 @@
-<div style="max-width:480px; margin:auto; font-family:sans-serif; text-align:center;">
+<div style="max-width:520px;margin:auto;font-family:system-ui,Arial,sans-serif;text-align:center;">
+  <h2 style="margin-bottom:6px">Friis + Malus Interactive (corrected)</h2>
+  <div style="font-size:13px;color:#334155;margin-bottom:8px;">
+    Pr shown in <strong>dBm</strong> and <strong>mW</strong>. Equations below are exact.
+  </div>
 
-    <h2>Polarization + Distance Simulator</h2>
+  <!-- Visual: Tx - wave - Rx -->
+  <div style="position:relative;height:90px;margin-bottom:10px;">
+    <div style="position:absolute;left:0;top:18px;font-size:40px;">📡</div>
+    <div id="wave" style="position:absolute;left:60px;right:60px;top:28px;height:34px;
+         background:repeating-linear-gradient(90deg, rgba(0,140,255,0.85) 0 8px, rgba(0,140,255,0.18) 8px 16px);
+         border-radius:10px; animation:waveMove 1s linear infinite;"></div>
+    <div id="rx" style="position:absolute;right:0;top:18px;font-size:40px;transform-origin:center;">📡</div>
+  </div>
+  <style>
+    @keyframes waveMove{from{background-position:0 0}to{background-position:32px 0}}
+  </style>
 
-    <!-- Antenna + Wave Visual -->
-    <div style="margin:20px 0; position:relative; height:80px;">
-        <div id="tx" style="position:absolute; left:0; top:20px; font-size:40px;">📡</div>
-        <div id="wave" style="
-            position:absolute; left:50px; top:25px; width:300px; height:30px;
-            background: repeating-linear-gradient(90deg,
-                rgba(0,150,255,0.7) 0px,
-                rgba(0,150,255,0.7) 10px,
-                rgba(0,150,255,0.2) 10px,
-                rgba(0,150,255,0.2) 20px
-            );
-            animation: waveMove 1s linear infinite;
-            border-radius:10px;
-        "></div>
-        <div id="rx" style="position:absolute; right:0; top:20px; 
-            font-size:40px; transform-origin:center;">📡</div>
+  <!-- Controls -->
+  <div style="text-align:left; padding:10px; border-radius:10px; background:#fff; box-shadow:0 6px 18px rgba(2,6,23,0.06);">
+    <label style="font-size:13px">Transmitted power, Pt (dBm)</label>
+    <input id="pt" type="number" value="0" step="0.1" style="width:100%;margin-bottom:8px"/>
+
+    <div style="display:flex;gap:8px;">
+      <div style="flex:1">
+        <label style="font-size:13px">Tx gain Gt (dBi)</label>
+        <input id="gt" type="number" value="2.15" step="0.1" style="width:100%"/>
+      </div>
+      <div style="flex:1">
+        <label style="font-size:13px">Rx gain Gr (dBi)</label>
+        <input id="gr" type="number" value="2.15" step="0.1" style="width:100%"/>
+      </div>
     </div>
 
-    <style>
-        @keyframes waveMove {
-            from { background-position: 0 0; }
-            to   { background-position: 40px 0; }
-        }
-    </style>
+    <label style="font-size:13px;margin-top:8px">Wavelength λ (m) — 1 GHz ≈ 0.30 m</label>
+    <input id="lambda" type="number" value="0.30" step="0.01" style="width:100%;margin-bottom:8px"/>
 
-    <!-- Sliders -->
-    <p><b>Receiver Rotation (°):</b></p>
-    <input type="range" min="0" max="90" value="0" id="ang" style="width:100%;">
-    <p>θ = <span id="angVal">0</span>°</p>
-
-    <p><b>Distance (m):</b></p>
-    <input type="range" min="0.3" max="3" value="0.3" step="0.01" id="dist" style="width:100%;">
-    <p>R = <span id="distVal">0.30</span> m</p>
-
-    <!-- Output -->
-    <p style="margin-top:20px;"><b>Predicted Relative Power:</b> 
-        <span id="powVal"></span>
-    </p>
-
-    <div style="
-        width:100%; height:20px; background:lightgray; border-radius:8px; margin-bottom:20px;">
-        <div id="powFill" style="
-            height:100%; width:100%; background:#4caf50; border-radius:8px;"></div>
+    <label style="font-size:13px">Distance R (m)</label>
+    <input id="dist" type="range" min="0.3" max="3" step="0.01" value="0.35" style="width:100%"/>
+    <div style="display:flex;justify-content:space-between">
+      <small>R = <span id="distVal">0.35</span> m</small>
+      <small>λ/(4πR) factor shown below</small>
     </div>
 
-    <!-- Equations + Explanation -->
-    <div style="text-align:left; font-size:14px; line-height:1.4;">
-        <h3>Equations Used</h3>
+    <label style="font-size:13px;margin-top:10px">Receiver rotation θ (°)</label>
+    <input id="ang" type="range" min="0" max="90" value="0" step="1" style="width:100%"/>
+    <div style="display:flex;justify-content:space-between"><small>θ = <span id="angVal">0</span>°</small><small></small></div>
+  </div>
 
-        <p><b>1) Malus Law (Polarization Loss)</b><br>
-        \( I = I_0 \cos^2(\theta) \)<br>
-        When antennas are misaligned, received power decreases by \( \cos^2(\theta) \).
-        </p>
+  <!-- Outputs -->
+  <div style="margin-top:12px;text-align:left">
+    <div style="background:#fff;padding:10px;border-radius:10px;box-shadow:0 6px 18px rgba(2,6,23,0.06)">
+      <div style="display:flex;justify-content:space-between">
+        <div>
+          <div style="font-weight:600">Friis (no polarization)</div>
+          <div style="font-size:13px;color:#374151">Pr₍Friis₎ = Pt + Gt + Gr + 20·log₁₀(λ / (4πR))</div>
+        </div>
+        <div style="text-align:right">
+          <div id="prFriis_dBm" style="font-size:18px;font-weight:700">-</div>
+          <div style="font-size:12px;color:#475569" id="prFriis_mW">- mW</div>
+        </div>
+      </div>
 
-        <p><b>2) Friis Transmission Equation</b><br>
-        \( P_r = P_t G_t G_r \left(\frac{\lambda}{4 \pi R}\right)^2 \)<br>
-        Power decreases with the square of distance because the wave spreads out in space.
-        </p>
+      <hr style="margin:10px 0"/>
 
-        <p><b>Total Power Used in the Simulator</b><br>
-        \( P \propto \cos^2(\theta)\left(\frac{\lambda}{4 \pi R}\right)^2 \)<br>
-        We multiply Malus (polarization loss) and Friis (distance loss) to estimate total drop.
-        </p>
+      <div style="display:flex;justify-content:space-between">
+        <div>
+          <div style="font-weight:600">After Malus (polarization)</div>
+          <div style="font-size:13px;color:#374151">Adjustment = 10·log₁₀(cos²θ) (dB)</div>
+        </div>
+        <div style="text-align:right">
+          <div id="malusDB" style="font-size:18px;font-weight:700">- dB</div>
+        </div>
+      </div>
+
+      <hr style="margin:10px 0"/>
+
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <div style="font-weight:700">Predicted received power</div>
+          <div style="font-size:13px;color:#374151">Pr = Friis + Malus adjustment</div>
+        </div>
+        <div style="text-align:right">
+          <div id="prTotal_dBm" style="font-size:20px;font-weight:800">- dBm</div>
+          <div id="prTotal_mW" style="font-size:12px;color:#475569">- mW</div>
+        </div>
+      </div>
+
+      <div style="height:12px;background:#e6eef8;border-radius:8px;margin-top:10px;overflow:hidden">
+        <div id="bar" style="height:100%;width:100%;background:#2563eb;transition:width 0.18s"></div>
+      </div>
     </div>
+  </div>
 
+  <!-- Equations summary (plain text, accurate) -->
+  <div style="text-align:left;font-size:13px;color:#334155;margin-top:10px">
+    <strong>Notes / units</strong>
+    <ul style="margin:6px 0 0 18px;padding:0">
+      <li>All dB numbers are in decibels: <em>dBm</em> (power relative to 1 mW). To convert: mW = 10^(dBm/10).</li>
+      <li>Malus: cos²θ multiplies linear power. In dB we add 10·log₁₀(cos²θ).</li>
+      <li>At θ = 90° the theoretical received power → 0 (–∞ dB). The widget clips that to a very small number for display.</li>
+    </ul>
+  </div>
 </div>
 
 <script>
-const ang = document.getElementById("ang");
-const dist = document.getElementById("dist");
-const angVal = document.getElementById("angVal");
-const distVal = document.getElementById("distVal");
-const powVal = document.getElementById("powVal");
-const powFill = document.getElementById("powFill");
-const rx = document.getElementById("rx");
+  // DOM
+  const ptEl = document.getElementById('pt');
+  const gtEl = document.getElementById('gt');
+  const grEl = document.getElementById('gr');
+  const lambdaEl = document.getElementById('lambda');
+  const distEl = document.getElementById('dist');
+  const angEl = document.getElementById('ang');
 
-const lambda = 0.30; // wavelength at 1 GHz
+  const distVal = document.getElementById('distVal');
+  const angVal = document.getElementById('angVal');
 
-function update() {
-    let theta = ang.value * Math.PI / 180;
-    let R = parseFloat(dist.value);
+  const prFriis_dBmEl = document.getElementById('prFriis_dBm');
+  const prFriis_mWEl = document.getElementById('prFriis_mW');
+  const malusDBEl = document.getElementById('malusDB');
+  const prTotal_dBmEl = document.getElementById('prTotal_dBm');
+  const prTotal_mWEl = document.getElementById('prTotal_mW');
+  const barEl = document.getElementById('bar');
+  const rx = document.getElementById('rx');
 
-    angVal.innerHTML = ang.value;
-    distVal.innerHTML = R.toFixed(2);
+  // helpers
+  function dBm_to_mW(dBm){ return Math.pow(10, dBm/10); }
+  function mW_to_dBm(mW){ return 10*Math.log10(Math.max(mW, 1e-30)); }
 
-    // Rotate antenna icon
-    rx.style.transform = `rotate(${ang.value}deg)`;
+  function update(){
+    const Pt = parseFloat(ptEl.value); // dBm
+    const Gt = parseFloat(gtEl.value);
+    const Gr = parseFloat(grEl.value);
+    const lambda = parseFloat(lambdaEl.value); // m
+    const R = parseFloat(distEl.value);
+    const theta_deg = parseFloat(angEl.value);
+    distVal.textContent = R.toFixed(2);
+    angVal.textContent = theta_deg;
 
-    // Malus + Friis
-    let malus = Math.cos(theta)**2;
-    let friis = (lambda/(4*Math.PI*R))**2;
-    let combined = malus * friis;
+    // rotate rx icon for visuals
+    rx.style.transform = `rotate(${theta_deg}deg)`;
 
-    powVal.innerHTML = combined.toExponential(2);
+    // Friis in dBm: Pt + Gt + Gr + 20 log10(lambda/(4πR))
+    const term = 20*Math.log10(lambda/(4*Math.PI*R));
+    const prFriis_dBm = Pt + Gt + Gr + term;
 
-    // Fill bar visualization
-    let w = 100 * combined * 200000; 
-    powFill.style.width = Math.min(100, w) + "%";
-}
+    // Malus adjustment in dB: 10 log10(cos^2 theta)
+    const theta = theta_deg * Math.PI / 180;
+    let cos2 = Math.cos(theta) ** 2;
+    if(cos2 < 1e-30) cos2 = 1e-30; // avoid -Inf, clip to tiny number
+    const malus_dB = 10 * Math.log10(cos2);
 
-ang.oninput = update;
-dist.oninput = update;
-update();
+    // Combined
+    const prTotal_dBm = prFriis_dBm + malus_dB;
+
+    // mW conversions
+    const prFriis_mW = dBm_to_mW(prFriis_dBm);
+    const prTotal_mW = dBm_to_mW(prTotal_dBm);
+
+    // Update UI (formatting)
+    prFriis_dBmEl.textContent = prFriis_dBm.toFixed(2) + " dBm";
+    prFriis_mWEl.textContent = prFriis_mW.toExponential(3) + " mW";
+
+    malusDBEl.textContent = malus_dB.toFixed(2) + " dB";
+
+    prTotal_dBmEl.textContent = prTotal_dBm.toFixed(2) + " dBm";
+    prTotal_mWEl.textContent = prTotal_mW.toExponential(3) + " mW";
+
+    // bar: map prTotal_mW to a reasonable percent for visualization
+    // pick a normalization scale so bar is visible for typical small powers
+    const scale = 1e-3; // 1 mW baseline -> 100%
+    const pct = Math.min(100, (prTotal_mW / scale) * 100);
+    barEl.style.width = pct + "%";
+  }
+
+  [ptEl, gtEl, grEl, lambdaEl, distEl, angEl].forEach(el => el.addEventListener('input', update));
+  update();
 </script>
