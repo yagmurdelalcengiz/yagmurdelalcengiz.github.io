@@ -9,7 +9,7 @@
     <div id="wave" style="position:absolute;left:60px;right:60px;top:28px;height:34px;
          background:repeating-linear-gradient(90deg, rgba(0,140,255,0.85) 0 8px, rgba(0,140,255,0.18) 8px 16px);
          border-radius:10px; animation:waveMove 1s linear infinite;"></div>
-    <div id="rx" style="position:absolute;right:0;top:18px;font-size:40px;transform: scaleX(-1);"> 📡a </div>
+    <div id="rx" style="position:absolute;right:0;top:18px;font-size:40px;transform: scaleX(-3);"> 📡</div>
   </div>
   <style>
     @keyframes waveMove{from{background-position:0 0}to{background-position:32px 0}}
@@ -97,7 +97,7 @@
     <ul style="margin:6px 0 0 18px;padding:0">
       <li>All dB numbers are in decibels: <em>dBm</em> and mW = 10^(dBm/10).</li>
       <li>Malus: cos²θ multiplies linear power. In dB we add 10·log₁₀(cos²θ).</li>
-      <li>At θ = 90° the theoretical received power → 0 (so negative infinite dB). So the value given above for θ = 90° isn't exactly correct</li>
+      <li>At θ = 90° the theoretical received power goes to 0 (so negative infinite dB). So the value given above for θ = 90° isn't exactly correct</li>
     </ul>
   </div>
 </div>
