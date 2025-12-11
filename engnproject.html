@@ -1,32 +1,107 @@
-<div style="max-width:400px; margin:auto; text-align:center; font-family:sans-serif;">
-    <h3>Polarization + Distance Demo</h3>
-    <p>Rotation (°): <input type="range" min="0" max="90" value="0" id="ang" style="width:100%;"></p>
-    <p>Distance (m): <input type="range" min="0.3" max="3" value="0.3" step="0.01" id="dist" style="width:100%;"></p>
+<div style="max-width:480px; margin:auto; font-family:sans-serif; text-align:center;">
 
-    <p>Power (relative): <span id="comboVal"></span></p>
+    <h2>Polarization + Distance Simulator</h2>
 
-    <div id="comboBar" style="
-        width:100%; height:20px; background:lightgray; border-radius:5px; overflow:hidden;">
-        <div id="comboFill" style="height:100%; width:100%; background:#2196f3;"></div>
+    <!-- Antenna + Wave Visual -->
+    <div style="margin:20px 0; position:relative; height:80px;">
+        <div id="tx" style="position:absolute; left:0; top:20px; font-size:40px;">📡</div>
+        <div id="wave" style="
+            position:absolute; left:50px; top:25px; width:300px; height:30px;
+            background: repeating-linear-gradient(90deg,
+                rgba(0,150,255,0.7) 0px,
+                rgba(0,150,255,0.7) 10px,
+                rgba(0,150,255,0.2) 10px,
+                rgba(0,150,255,0.2) 20px
+            );
+            animation: waveMove 1s linear infinite;
+            border-radius:10px;
+        "></div>
+        <div id="rx" style="position:absolute; right:0; top:20px; 
+            font-size:40px; transform-origin:center;">📡</div>
     </div>
+
+    <style>
+        @keyframes waveMove {
+            from { background-position: 0 0; }
+            to   { background-position: 40px 0; }
+        }
+    </style>
+
+    <!-- Sliders -->
+    <p><b>Receiver Rotation (°):</b></p>
+    <input type="range" min="0" max="90" value="0" id="ang" style="width:100%;">
+    <p>θ = <span id="angVal">0</span>°</p>
+
+    <p><b>Distance (m):</b></p>
+    <input type="range" min="0.3" max="3" value="0.3" step="0.01" id="dist" style="width:100%;">
+    <p>R = <span id="distVal">0.30</span> m</p>
+
+    <!-- Output -->
+    <p style="margin-top:20px;"><b>Predicted Relative Power:</b> 
+        <span id="powVal"></span>
+    </p>
+
+    <div style="
+        width:100%; height:20px; background:lightgray; border-radius:8px; margin-bottom:20px;">
+        <div id="powFill" style="
+            height:100%; width:100%; background:#4caf50; border-radius:8px;"></div>
+    </div>
+
+    <!-- Equations + Explanation -->
+    <div style="text-align:left; font-size:14px; line-height:1.4;">
+        <h3>Equations Used</h3>
+
+        <p><b>1) Malus Law (Polarization Loss)</b><br>
+        \( I = I_0 \cos^2(\theta) \)<br>
+        When antennas are misaligned, received power decreases by \( \cos^2(\theta) \).
+        </p>
+
+        <p><b>2) Friis Transmission Equation</b><br>
+        \( P_r = P_t G_t G_r \left(\frac{\lambda}{4 \pi R}\right)^2 \)<br>
+        Power decreases with the square of distance because the wave spreads out in space.
+        </p>
+
+        <p><b>Total Power Used in the Simulator</b><br>
+        \( P \propto \cos^2(\theta)\left(\frac{\lambda}{4 \pi R}\right)^2 \)<br>
+        We multiply Malus (polarization loss) and Friis (distance loss) to estimate total drop.
+        </p>
+    </div>
+
 </div>
 
 <script>
 const ang = document.getElementById("ang");
 const dist = document.getElementById("dist");
-const comboVal = document.getElementById("comboVal");
-const comboFill = document.getElementById("comboFill");
-const lambda = 0.30;
+const angVal = document.getElementById("angVal");
+const distVal = document.getElementById("distVal");
+const powVal = document.getElementById("powVal");
+const powFill = document.getElementById("powFill");
+const rx = document.getElementById("rx");
+
+const lambda = 0.30; // wavelength at 1 GHz
 
 function update() {
     let theta = ang.value * Math.PI / 180;
     let R = parseFloat(dist.value);
+
+    angVal.innerHTML = ang.value;
+    distVal.innerHTML = R.toFixed(2);
+
+    // Rotate antenna icon
+    rx.style.transform = `rotate(${ang.value}deg)`;
+
+    // Malus + Friis
     let malus = Math.cos(theta)**2;
     let friis = (lambda/(4*Math.PI*R))**2;
     let combined = malus * friis;
-    comboVal.innerHTML = combined.toExponential(2);
-    comboFill.style.width = Math.min(100, combined*2e5) + "%";
+
+    powVal.innerHTML = combined.toExponential(2);
+
+    // Fill bar visualization
+    let w = 100 * combined * 200000; 
+    powFill.style.width = Math.min(100, w) + "%";
 }
+
 ang.oninput = update;
 dist.oninput = update;
 update();
