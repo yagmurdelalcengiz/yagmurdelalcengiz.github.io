@@ -1,4 +1,4 @@
-<div style="max-width:520px;margin:auto;font-family:system-ui,Arial,sans-serif;text-align:center;">
+<div style="max-width:520px;margin:auto;text-align:center;">
   <h2 style="margin-bottom:6px"> Small Distance Friis + Malus Predictions Interactive</h2>
   <div style="font-size:13px;color:#334155;margin-bottom:8px;">
     Pr shown in <strong>dBm</strong> and <strong>mW</strong>
@@ -9,21 +9,12 @@
 <!-- Simple animated sine wave -->
 <svg id="sinewave" width="100%" height="60" viewBox="0 0 300 60"
      style="position:absolute; left:60px; right:60px; top:28px;">
-  <path id="wavePath"
-        d="M0 30 Q 25 0, 50 30 T 100 30 T 150 30 T 200 30 T 250 30 T 300 30"
+  <path d="M0 30 Q 25 0, 50 30 T 100 30 T 150 30 T 200 30 T 250 30 T 300 30"
         stroke="rgba(0,140,255,0.85)"
         stroke-width="3"
-        fill="none">
-    <animate attributeName="d"
-             dur="1.8s"
-             repeatCount="indefinite"
-             values="
-               M0 30 Q 25 0, 50 30 T 100 30 T 150 30 T 200 30 T 250 30 T 300 30;
-               M0 30 Q 25 60, 50 30 T 100 30 T 150 30 T 200 30 T 250 30 T 300 30;
-               M0 30 Q 25 0, 50 30 T 100 30 T 150 30 T 200 30 T 250 30 T 300 30
-             " />
-  </path>
+        fill="none" />
 </svg>
+
     <div id="rx" style="position:absolute;right:0;top:18px;font-size:40px;"> 📡</div>
   </div>
   <style>
@@ -46,7 +37,7 @@
       </div>
     </div>
 
-    <label style="font-size:13px;margin-top:8px">Wavelength λ (m) — 1 GHz ≈ 0.30 m</label>
+    <label style="font-size:13px;margin-top:8px">Wavelength λ (m)</label>
     <input id="lambda" type="number" value="0.30" step="0.01" style="width:100%;margin-bottom:8px"/>
 
     <label style="font-size:13px">Distance R (m)</label>
@@ -108,7 +99,7 @@
 
   <!-- Equations summary (plain text, accurate) -->
   <div style="text-align:left;font-size:13px;color:#334155;margin-top:10px">
-    <strong>Notes / units</strong>
+    <strong>Notes</strong>
     <ul style="margin:6px 0 0 18px;padding:0">
       <li>All dB numbers are in decibels: <em>dBm</em> and mW = 10^(dBm/10).</li>
       <li>Malus: cos²θ multiplies linear power. In dB we add 10·log₁₀(cos²θ).</li>
