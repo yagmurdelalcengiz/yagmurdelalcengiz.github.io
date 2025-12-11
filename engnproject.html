@@ -1,0 +1,33 @@
+<div style="max-width:400px; margin:auto; text-align:center; font-family:sans-serif;">
+    <h3>Polarization + Distance Demo</h3>
+    <p>Rotation (°): <input type="range" min="0" max="90" value="0" id="ang" style="width:100%;"></p>
+    <p>Distance (m): <input type="range" min="0.3" max="3" value="0.3" step="0.01" id="dist" style="width:100%;"></p>
+
+    <p>Power (relative): <span id="comboVal"></span></p>
+
+    <div id="comboBar" style="
+        width:100%; height:20px; background:lightgray; border-radius:5px; overflow:hidden;">
+        <div id="comboFill" style="height:100%; width:100%; background:#2196f3;"></div>
+    </div>
+</div>
+
+<script>
+const ang = document.getElementById("ang");
+const dist = document.getElementById("dist");
+const comboVal = document.getElementById("comboVal");
+const comboFill = document.getElementById("comboFill");
+const lambda = 0.30;
+
+function update() {
+    let theta = ang.value * Math.PI / 180;
+    let R = parseFloat(dist.value);
+    let malus = Math.cos(theta)**2;
+    let friis = (lambda/(4*Math.PI*R))**2;
+    let combined = malus * friis;
+    comboVal.innerHTML = combined.toExponential(2);
+    comboFill.style.width = Math.min(100, combined*2e5) + "%";
+}
+ang.oninput = update;
+dist.oninput = update;
+update();
+</script>
