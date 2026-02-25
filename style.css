@@ -35,6 +35,7 @@
         background-color: white;
         position: absolute;
         bottom: 0;
+        z-index: 1000;
     }
     .top-container{
         width: 100vw;
