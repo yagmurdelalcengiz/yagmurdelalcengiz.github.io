@@ -30,7 +30,7 @@
     .white-rabbit{
         width: 30px;
         height: 40px;
-        border: 50%;
+        border-radius: 50%;
         pointer-events: none;
         background-color: white;
         z-index: 1000;
