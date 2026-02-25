@@ -31,8 +31,17 @@
         width: 30px;
         height: 40px;
         border-radius: 50%;
-        pointer-events: none;
+        pointer-events: auto;
         background-color: white;
-        z-index: 1000;
         position: absolute;
+        bottom: 0;
+    }
+    .top-container{
+        width: 100vw;
+        height: 100vh;
+        position: absolute;
+        top: 0;
+        left: 0;
+        pointer-events: none;
+        z-index: 1000;
     }
