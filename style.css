@@ -33,8 +33,11 @@
         pointer-events: auto;
         position: absolute;
         bottom: 0;
-        right: 0;
         z-index: 1000;
+        animation-name: rabbit-walk;
+        animation-duration: 10s;
+        animation-iteration-count: infinite;
+
     }
     .top-container{
         width: 100vw;
@@ -44,4 +47,8 @@
         left: 0;
         pointer-events: none;
         z-index: 1000;
+    }
+    @keyframes rabbit-walk {
+      0% {right: -0.5%}
+      100%{right: 100%;}
     }
