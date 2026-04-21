@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Adaptive Simpson's Rule Visualization</title>
+    
+    <script defer src="https://unpkg.com/mathlive"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.8.0/math.js"></script>
+    
+    <style>
+        /* Libertinus Math Font */
+        @import url('https://fonts.googleapis.com/css2?family=Libertinus+Math&display=swap');
+        
+        :root {
+            --bg: #ffffff;
+            --text: #000000;
+            --gray: #aaaaaa;
+            --light-gray: #f4f4f4;
+            --border: #000000;
+        }
+
+        body {
+            font-family: "Libertinus Math", system-ui, serif;
+            background-color: var(--bg);
+            color: var(--text);
+            max-width: 850px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            line-height: 1.6;
+        }
+
+        /* Use italics to emulate LaTeX math mode variables */
+        i {
+            font-family: "Libertinus Math", system-ui, serif;
+            font-style: italic;
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 1.8rem;
+            margin-bottom: 5px;
+        }
+
+        .author {
+            text-align: center;
+            font-style: italic;
+            margin-bottom: 30px;
+        }
+
+        .abstract {
+            width: 80%;
+            margin: 0 auto 30px auto;
+            font-size: 1.05rem;
+        }
+
+        .abstract strong {
+            display: inline-block;
+        }
+
+        .section {
+            margin-bottom: 30px;
+        }
+
+        h2 {
+            font-size: 1.3rem;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 5px;
+            margin-bottom: 15px;
+        }
+
+        .control-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        label {
+            font-weight: bold;
+            display: block;
+            margin-bottom: 5px;
+            font-size: 1.1rem;
+        }
+
+        math-field {
+            font-size: 1.2rem;
+            background: #fff;
+            color: #000;
+            border: 1px solid var(--border);
+            padding: 8px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        input[type="number"] {
+            font-family: "Libertinus Math", system-ui, serif;
+            font-size: 1.1rem;
+            border: 1px solid var(--border);
+            padding: 8px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        button {
+            font-family: "Libertinus Math", system-ui, serif;
+            background-color: #fff;
+            color: #000;
+            border: 1px solid var(--border);
+            padding: 10px 20px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            width: 100%;
+            transition: background 0.2s;
+        }
+
+        button:hover {
+            background-color: var(--light-gray);
+        }
+
+        .results-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+            display: none;
+            font-size: 1.1rem;
+        }
+
+        .results-table th, .results-table td {
+            border: 1px solid var(--border);
+            padding: 8px;
+            text-align: left;
+        }
+
+        .results-table th {
+            background-color: var(--light-gray);
+        }
+
+        canvas {
+            display: block;
+            margin: 20px auto;
+            border: 1px solid var(--border);
+            background-color: #fff;
+            max-width: 100%;
+        }
+
+        .figure-caption {
+            text-align: center;
+            font-style: italic;
+            font-size: 1rem;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Interactive Visualization of Adaptive Simpson's Rule</h1>
+    <div class="author">Algorithm Simulation Tool</div>
+
+    <div class="abstract">
+        <strong>Abstract.</strong> This is a 100% AI coded tool that provides a 2D graphical simulation of the adaptive Simpson's quadrature method. The algorithm recursively subdivides intervals, isolating active regions and evaluating specific internal nodes until a desired error tolerance is achieved.
+    </div>
+
+    <div class="section">
+        <h2>1. Parameters & Initialization</h2>
+        
+        <div>
+            <label>Function <i>f(x)</i>:</label>
+            <math-field id="latex-input">\sin(x^2)</math-field>
+        </div>
+        <br>
+        <div class="control-grid">
+            <div>
+                <label>Lower Bound (<i>a</i>):</label>
+                <input type="number" id="bound-a" value="0" step="0.1">
+            </div>
+            <div>
+                <label>Upper Bound (<i>b</i>):</label>
+                <input type="number" id="bound-b" value="4" step="0.1">
+            </div>
+            <div>
+                <label>Tolerance (<i>&epsilon;</i>):</label>
+                <input type="number" id="tolerance" value="0.01" step="0.001">
+            </div>
+            <div>
+                <label>&nbsp;</label>
+                <button id="run-btn">Execute Simulation</button>
+            </div>
+        </div>
+
+        <table class="results-table" id="results-box">
+            <tr>
+                <th>Approximation (<i>I</i>)</th>
+                <th>Estimated Error</th>
+                <th>Nodes Evaluated</th>
+                <th>Singularities</th>
+            </tr>
+            <tr>
+                <td id="res-approx"></td>
+                <td id="res-error"></td>
+                <td id="res-nodes"></td>
+                <td id="res-sing"></td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="section">
+        <h2>2. Graphical Output</h2>
+        <canvas id="graphCanvas" width="800" height="500"></canvas>
+        <div class="figure-caption">
+            Figure 1: Sequential breakdown of intervals. Active nodes are shown as dots. Resolved intervals are shaded.
+        </div>
+    </div>
+
+    <script>
+        const mathField = document.getElementById('latex-input');
+        const btnRun = document.getElementById('run-btn');
+        const canvas = document.getElementById('graphCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        let animationInterval;
+
+        function parseLatexToMathJS(latex) {
+            let parsed = latex
+                .replace(/\\cdot/g, '*')
+                .replace(/\\left\(/g, '(')
+                .replace(/\\right\)/g, ')')
+                .replace(/\\sin/g, 'sin')
+                .replace(/\\cos/g, 'cos')
+                .replace(/\\tan/g, 'tan')
+                .replace(/\\exp/g, 'exp')
+                .replace(/\\ln/g, 'log')
+                .replace(/\\pi/g, 'pi')
+                .replace(/\\sqrt{([^}]+)}/g, 'sqrt($1)');
+            parsed = parsed.replace(/\\frac{([^{}]+)}{([^{}]+)}/g, '($1)/($2)');
+            return parsed;
+        }
+
+        function evaluateFunc(compiledCode, xValue) {
+            try {
+                return compiledCode.evaluate({ x: xValue });
+            } catch (err) {
+                return NaN;
+            }
+        }
+
+        function runAdaptiveSimpson(compiledCode, a, b, tol) {
+            let trace = []; // Stores the sequence of events
+            let nodes = new Set();
+            let singularities = [];
+            let totalError = 0;
+
+            function f(x) {
+                nodes.add(x);
+                let val = evaluateFunc(compiledCode, x);
+                if (!isFinite(val) || isNaN(val)) {
+                    singularities.push(x);
+                    val = 0; 
+                }
+                return val;
+            }
+
+            function recurse(a, b, eps, S, fa, fb, fc, depth) {
+                let c = (a + b) / 2;
+                let d = (a + c) / 2;
+                let e = (c + b) / 2;
+
+                let fd = f(d);
+                let fe = f(e);
+
+                // Step 1: Log the evaluation of the active interval
+                trace.push({ type: 'evaluating', a, b, c, d, e, fa, fb, fc, fd, fe });
+
+                let leftS = ((c - a) / 6) * (fa + 4 * fd + fc);
+                let rightS = ((b - c) / 6) * (fc + 4 * fe + fb);
+                let S2 = leftS + rightS;
+
+                // Step 2: Check tolerance
+                if (depth <= 0 || Math.abs(S2 - S) <= 15 * eps) {
+                    totalError += Math.abs(S2 - S) / 15;
+                    // Log the resolution of this interval
+                    trace.push({ type: 'resolved', a, b, c, fa, fb, fc });
+                    return S2 + (S2 - S) / 15;
+                }
+
+                // Step 3: Recurse left, then right
+                return recurse(a, c, eps / 2, leftS, fa, fc, fd, depth - 1) +
+                       recurse(c, b, eps / 2, rightS, fc, fb, fe, depth - 1);
+            }
+
+            let c = (a + b) / 2;
+            let fa = f(a), fb = f(b), fc = f(c);
+            let S = (b - a) / 6 * (fa + 4 * fc + fb);
+
+            let result = recurse(a, b, tol, S, fa, fb, fc, 15);
+            let uniqueSingularities = [...new Set(singularities.map(s => Number(s.toFixed(4))))];
+
+            return { result, error: totalError, nodes: nodes.size, singularities: uniqueSingularities, trace };
+        }
+
+        function simulateGraph(compiledCode, startA, startB, resultData) {
+            clearInterval(animationInterval);
+            
+            const padding = 50;
+            const width = canvas.width - padding * 2;
+            const height = canvas.height - padding * 2;
+
+            // Generate points to find bounds and draw the true curve
+            const points = 500;
+            let trueCurve = [];
+            let minY = 0; 
+            let maxY = 0;
+
+            for (let i = 0; i <= points; i++) {
+                let x = startA + (startB - startA) * (i / points);
+                let y = evaluateFunc(compiledCode, x);
+                if (isFinite(y)) {
+                    trueCurve.push({x, y});
+                    if (y < minY) minY = y;
+                    if (y > maxY) maxY = y;
+                }
+            }
+
+            let yRange = maxY - minY;
+            if (yRange === 0) yRange = 1;
+            minY -= yRange * 0.15;
+            maxY += yRange * 0.15;
+
+            const mapX = (x) => padding + ((x - startA) / (startB - startA)) * width;
+            const mapY = (y) => canvas.height - padding - ((y - minY) / (maxY - minY)) * height;
+
+            function drawGridAndAxes() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                
+                // Grid
+                ctx.strokeStyle = '#f0f0f0';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                for (let i = 0; i <= 10; i++) {
+                    let x = padding + (width / 10) * i;
+                    let y = padding + (height / 10) * i;
+                    ctx.moveTo(x, padding); ctx.lineTo(x, canvas.height - padding);
+                    ctx.moveTo(padding, y); ctx.lineTo(canvas.width - padding, y);
+                }
+                ctx.stroke();
+
+                // Axes
+                ctx.strokeStyle = '#000';
+                ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                let yZero = mapY(0);
+                if (yZero >= padding && yZero <= canvas.height - padding) {
+                    ctx.moveTo(padding, yZero);
+                    ctx.lineTo(canvas.width - padding, yZero);
+                }
+                
+                // Border box
+                ctx.strokeRect(padding, padding, width, height);
+                ctx.stroke();
+
+                // True Curve
+                ctx.strokeStyle = '#888';
+                ctx.setLineDash([5, 5]);
+                ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                trueCurve.forEach((pt, index) => {
+                    if (index === 0) ctx.moveTo(mapX(pt.x), mapY(pt.y));
+                    else ctx.lineTo(mapX(pt.x), mapY(pt.y));
+                });
+                ctx.stroke();
+                ctx.setLineDash([]);
+            }
+
+            function evaluateParabola(px, x1, y1, x2, y2, x3, y3) {
+                const term1 = y1 * ((px - x2) * (px - x3)) / ((x1 - x2) * (x1 - x3));
+                const term2 = y2 * ((px - x1) * (px - x3)) / ((x2 - x1) * (x2 - x3));
+                const term3 = y3 * ((px - x1) * (px - x2)) / ((x3 - x1) * (x3 - x2));
+                return term1 + term2 + term3;
+            }
+
+            function drawResolvedIntervals(intervals) {
+                intervals.forEach(step => {
+                    ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+                    ctx.strokeStyle = '#000';
+                    ctx.lineWidth = 1;
+                    
+                    ctx.beginPath();
+                    ctx.moveTo(mapX(step.a), mapY(0));
+                    
+                    for(let px = step.a; px <= step.b; px += (step.b - step.a)/50) {
+                        let py = evaluateParabola(px, step.a, step.fa, step.c, step.fc, step.b, step.fb);
+                        ctx.lineTo(mapX(px), mapY(py));
+                    }
+                    
+                    ctx.lineTo(mapX(step.b), mapY(step.fb));
+                    ctx.lineTo(mapX(step.b), mapY(0));
+                    ctx.fill();
+                    ctx.stroke();
+                });
+            }
+
+            function drawActiveNodes(frame) {
+                // Highlight interval on X axis
+                ctx.fillStyle = 'rgba(255, 200, 0, 0.2)';
+                ctx.fillRect(mapX(frame.a), padding, mapX(frame.b) - mapX(frame.a), height);
+
+                // Draw Vertical markers for active nodes
+                const nodes = [
+                    {x: frame.a, y: frame.fa}, {x: frame.d, y: frame.fd}, 
+                    {x: frame.c, y: frame.fc}, {x: frame.e, y: frame.fe}, 
+                    {x: frame.b, y: frame.fb}
+                ];
+
+                nodes.forEach(n => {
+                    ctx.strokeStyle = '#aaa';
+                    ctx.beginPath();
+                    ctx.moveTo(mapX(n.x), mapY(0));
+                    ctx.lineTo(mapX(n.x), mapY(n.y));
+                    ctx.stroke();
+
+                    ctx.fillStyle = '#000';
+                    ctx.beginPath();
+                    ctx.arc(mapX(n.x), mapY(n.y), 4, 0, Math.PI * 2);
+                    ctx.fill();
+                });
+            }
+
+            let traceIndex = 0;
+            let resolvedIntervals = [];
+            const trace = resultData.trace;
+
+            animationInterval = setInterval(() => {
+                if (traceIndex >= trace.length) {
+                    clearInterval(animationInterval);
+                    return;
+                }
+
+                drawGridAndAxes();
+                drawResolvedIntervals(resolvedIntervals);
+
+                let frame = trace[traceIndex];
+
+                if (frame.type === 'evaluating') {
+                    drawActiveNodes(frame);
+                } else if (frame.type === 'resolved') {
+                    resolvedIntervals.push(frame);
+                    drawResolvedIntervals(resolvedIntervals); 
+                }
+
+                traceIndex++;
+            }, 600); 
+        }
+
+        btnRun.addEventListener('click', () => {
+            const latexStr = mathField.getValue('latex');
+            const mathStr = parseLatexToMathJS(latexStr);
+            
+            const a = parseFloat(document.getElementById('bound-a').value);
+            const b = parseFloat(document.getElementById('bound-b').value);
+            const tol = parseFloat(document.getElementById('tolerance').value);
+
+            try {
+                const compiledCode = math.compile(mathStr);
+                const results = runAdaptiveSimpson(compiledCode, a, b, tol);
+
+                document.getElementById('results-box').style.display = 'table';
+                document.getElementById('res-approx').innerText = results.result.toFixed(8);
+                document.getElementById('res-error').innerText = results.error.toExponential(4);
+                document.getElementById('res-nodes').innerText = results.nodes;
+                document.getElementById('res-sing').innerText = results.singularities.length > 0 ? results.singularities.join(', ') : 'None';
+
+                simulateGraph(compiledCode, a, b, results);
+
+            } catch (err) {
+                alert("Error parsing or evaluating. Ensure standard LaTeX math formulation.");
+                console.error(err);
+            }
+        });
+        
+        // Initial Canvas text matching the new font
+        ctx.font = "16px 'Libertinus Math', system-ui, serif";
+        ctx.fillText("Enter parameters and execute to begin simulation.", 220, 250);
+    </script>
+</body>
+</html>
