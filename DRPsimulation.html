@@ -9,7 +9,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.8.0/math.js"></script>
     
     <style>
-        /* Libertinus Math Font */
         @import url('https://fonts.googleapis.com/css2?family=Libertinus+Math&display=swap');
         
         :root {
@@ -30,7 +29,6 @@
             line-height: 1.6;
         }
 
-        /* Use italics to emulate LaTeX math mode variables */
         i {
             font-family: "Libertinus Math", system-ui, serif;
             font-style: italic;
@@ -52,10 +50,6 @@
             width: 80%;
             margin: 0 auto 30px auto;
             font-size: 1.05rem;
-        }
-
-        .abstract strong {
-            display: inline-block;
         }
 
         .section {
@@ -93,7 +87,7 @@
             box-sizing: border-box;
         }
 
-        input[type="number"] {
+        input[type="number"], input[type="text"] {
             font-family: "Libertinus Math", system-ui, serif;
             font-size: 1.1rem;
             border: 1px solid var(--border);
@@ -165,19 +159,19 @@
     <div class="section">
         <h2>1. Parameters & Initialization</h2>
         
-<div>
+        <div>
             <label>Function <i>f(x)</i>:</label>
             <math-field id="latex-input">\frac{1}{\sqrt{2 \cdot \pi}} \cdot \exp\left(-\frac{x^2}{2}\right)</math-field>
         </div>
         <br>
         <div class="control-grid">
             <div>
-                <label>Lower Bound (<i>a</i>):</label>
-                <input type="number" id="bound-a" value="-3" step="0.1">
+                <label>Bounds (<i>a,b</i>):</label>
+                <input type="text" id="bounds" value="-3, 3">
             </div>
             <div>
-                <label>Upper Bound (<i>b</i>):</label>
-                <input type="number" id="bound-b" value="3" step="0.1">
+                <label>Min Step (<i>h<sub>min</sub></i>):</label>
+                <input type="number" id="hmin" value="1e-5" step="1e-6">
             </div>
             <div>
                 <label>Tolerance (<i>&epsilon;</i>):</label>
@@ -245,72 +239,113 @@
             }
         }
 
-        function runAdaptiveSimpson(compiledCode, a0, b0, tol) {
+        function runAdaptiveSimpson(compiledCode, a0, b0, tol, hmin) {
             let trace = []; 
             let nodes = new Set();
-            let singularities = [];
+            let singularities = []; // Will store raw 'c' values now
             let totalError = 0;
-            let hmin = 1e-6; // Prevent infinite loops on singularities
+
+            let fCache = new Map();
 
             function f(x) {
+                if (fCache.has(x)) return fCache.get(x);
                 nodes.add(x);
                 let val = evaluateFunc(compiledCode, x);
-                if (!isFinite(val) || isNaN(val)) {
-                    singularities.push(x);
-                    val = 0; 
-                }
+                fCache.set(x, val);
                 return val;
             }
 
-            // Using an array as a stack to manage awaiting intervals iteratively
             let awaiting_intervals = [ {a: a0, b: b0} ];
             let examined_apprx = 0;
+            let globalLength = Math.abs(b0 - a0) || 1;
 
             while (awaiting_intervals.length > 0) {
-                let active = awaiting_intervals.pop(); // Pop top interval
+                let active = awaiting_intervals.pop(); 
                 let a = active.a;
                 let b = active.b;
                 let length = b - a;
 
-                // 5 uniform points equivalent: x0=a, x1=d, x2=c, x3=e, x4=b
                 let c = (a + b) / 2.0;
                 let d = (a + c) / 2.0;
                 let e = (c + b) / 2.0;
 
                 let fa = f(a), fb = f(b), fc = f(c), fd = f(d), fe = f(e);
 
-                // Log evaluation for animation
-                trace.push({ type: 'evaluating', a, b, c, d, e, fa, fb, fc, fd, fe });
+                trace.push({ 
+                    type: 'evaluating', a, b, c, d, e, 
+                    fa: isFinite(fa) ? fa : 0, 
+                    fb: isFinite(fb) ? fb : 0, 
+                    fc: isFinite(fc) ? fc : 0, 
+                    fd: isFinite(fd) ? fd : 0, 
+                    fe: isFinite(fe) ? fe : 0 
+                });
 
-                // caldeltai equivalent calculations
                 let IS = (length / 6.0) * (fa + 4.0 * fc + fb);
                 let ISc = (length / 12.0) * (fa + 4.0 * fd + 2.0 * fc + 4.0 * fe + fb);
                 let deltai = IS - ISc;
 
-                // Tolerance check scaled to the global interval size
-                if (Math.abs(deltai) < 15.0 * tol * (length / (b0 - a0)) || length < hmin) {
-                    // Accumulate integral with standard error correction
-                    examined_apprx += ISc + (ISc - IS) / 15.0; 
-                    totalError += Math.abs(deltai) / 15.0;
-                    trace.push({ type: 'resolved', a, b, c, fa, fb, fc });
+                let Am = (a + b) / 2.0;
+                
+                let tolCheck = Math.abs(deltai) < 15.0 * tol * (length / globalLength);
+
+                if (tolCheck) {
+                    if (isFinite(ISc) && isFinite(IS)) {
+                        examined_apprx += ISc + (ISc - IS) / 15.0; 
+                        totalError += Math.abs(deltai) / 15.0;
+                    }
+                    trace.push({ type: 'resolved', a, b, c, fa: isFinite(fa)?fa:0, fb: isFinite(fb)?fb:0, fc: isFinite(fc)?fc:0 });
                 } else {
-                    // Push right half first, then left half so left is popped/processed next
-                    let Am = (a + b) / 2.0;
-                    awaiting_intervals.push({a: Am, b: b});
-                    awaiting_intervals.push({a: a, b: Am});
+                    if ((Am - a) < hmin || Am === a || Am === b) {
+                        // Store the raw numeric midpoint for mathematical clustering later
+                        singularities.push(c);
+                    } else {
+                        awaiting_intervals.push({a: Am, b: b});
+                        awaiting_intervals.push({a: a, b: Am});
+                    }
                 }
             }
 
-            let uniqueSingularities = [...new Set(singularities.map(s => Number(s.toFixed(4))))];
+            // --- MATHEMATICAL CLUSTERING ---
+            let clusteredSingularities = [];
+            if (singularities.length > 0) {
+                // 1. Sort singularities chronologically from left to right bounds
+                singularities.sort((val1, val2) => val1 - val2);
+
+                let clusterStart = singularities[0];
+                let clusterEnd = singularities[0];
+                
+                // If singularities are within 10 times the min step, they belong to the same asymptote
+                let threshold = hmin * 10; 
+
+                for (let i = 1; i < singularities.length; i++) {
+                    if (singularities[i] - clusterEnd <= threshold) {
+                        // Extend the current cluster
+                        clusterEnd = singularities[i];
+                    } else {
+                        // Finalize the current cluster by finding its exact midpoint
+                        let mid = (clusterStart + clusterEnd) / 2.0;
+                        // parseFloat cleans up negative zeros and trailing decimals
+                        clusteredSingularities.push(`x = ${parseFloat(mid.toFixed(5))}`);
+                        
+                        // Start a new cluster
+                        clusterStart = singularities[i];
+                        clusterEnd = singularities[i];
+                    }
+                }
+                // Finalize the final cluster remaining in the pipeline
+                let mid = (clusterStart + clusterEnd) / 2.0;
+                clusteredSingularities.push(`x = ${parseFloat(mid.toFixed(5))}`);
+            }
 
             return { 
                 result: examined_apprx, 
                 error: totalError, 
                 nodes: nodes.size, 
-                singularities: uniqueSingularities, 
+                singularities: clusteredSingularities, 
                 trace 
             };
         }
+
         function simulateGraph(compiledCode, startA, startB, resultData) {
             clearInterval(animationInterval);
             
@@ -318,7 +353,6 @@
             const width = canvas.width - padding * 2;
             const height = canvas.height - padding * 2;
 
-            // Generate points to find bounds and draw the true curve
             const points = 500;
             let trueCurve = [];
             let minY = 0; 
@@ -334,8 +368,8 @@
                 }
             }
 
-            let yRange = maxY - minY;
-            if (yRange === 0) yRange = 1;
+            let yRange = Math.abs(maxY - minY);
+            if (yRange === 0 || isNaN(yRange)) yRange = 1;
             minY -= yRange * 0.15;
             maxY += yRange * 0.15;
 
@@ -345,7 +379,6 @@
             function drawGridAndAxes() {
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
                 
-                // Grid
                 ctx.strokeStyle = '#f0f0f0';
                 ctx.lineWidth = 1;
                 ctx.beginPath();
@@ -357,7 +390,6 @@
                 }
                 ctx.stroke();
 
-                // Axes
                 ctx.strokeStyle = '#000';
                 ctx.lineWidth = 1.5;
                 ctx.beginPath();
@@ -367,27 +399,35 @@
                     ctx.lineTo(canvas.width - padding, yZero);
                 }
                 
-                // Border box
                 ctx.strokeRect(padding, padding, width, height);
                 ctx.stroke();
 
-                // True Curve
                 ctx.strokeStyle = '#888';
                 ctx.setLineDash([5, 5]);
                 ctx.lineWidth = 1.5;
                 ctx.beginPath();
+                let isDrawing = false;
                 trueCurve.forEach((pt, index) => {
-                    if (index === 0) ctx.moveTo(mapX(pt.x), mapY(pt.y));
-                    else ctx.lineTo(mapX(pt.x), mapY(pt.y));
+                    let yMap = mapY(pt.y);
+                    if (yMap < 0 || yMap > canvas.height) {
+                        isDrawing = false;
+                        return;
+                    }
+                    if (!isDrawing) {
+                        ctx.moveTo(mapX(pt.x), yMap);
+                        isDrawing = true;
+                    } else {
+                        ctx.lineTo(mapX(pt.x), yMap);
+                    }
                 });
                 ctx.stroke();
                 ctx.setLineDash([]);
             }
 
             function evaluateParabola(px, x1, y1, x2, y2, x3, y3) {
-                const term1 = y1 * ((px - x2) * (px - x3)) / ((x1 - x2) * (x1 - x3));
-                const term2 = y2 * ((px - x1) * (px - x3)) / ((x2 - x1) * (x2 - x3));
-                const term3 = y3 * ((px - x1) * (px - x2)) / ((x3 - x1) * (x3 - x2));
+                const term1 = y1 * ((px - x2) * (px - x3)) / (((x1 - x2) * (x1 - x3)) || 1e-10);
+                const term2 = y2 * ((px - x1) * (px - x3)) / (((x2 - x1) * (x2 - x3)) || 1e-10);
+                const term3 = y3 * ((px - x1) * (px - x2)) / (((x3 - x1) * (x3 - x2)) || 1e-10);
                 return term1 + term2 + term3;
             }
 
@@ -400,7 +440,10 @@
                     ctx.beginPath();
                     ctx.moveTo(mapX(step.a), mapY(0));
                     
-                    for(let px = step.a; px <= step.b; px += (step.b - step.a)/50) {
+                    let drawStep = (step.b - step.a) / 50;
+                    if(drawStep <= 0) drawStep = 0.01;
+
+                    for(let px = step.a; px <= step.b; px += drawStep) {
                         let py = evaluateParabola(px, step.a, step.fa, step.c, step.fc, step.b, step.fb);
                         ctx.lineTo(mapX(px), mapY(py));
                     }
@@ -413,11 +456,9 @@
             }
 
             function drawActiveNodes(frame) {
-                // Highlight interval on X axis
                 ctx.fillStyle = 'rgba(255, 200, 0, 0.2)';
                 ctx.fillRect(mapX(frame.a), padding, mapX(frame.b) - mapX(frame.a), height);
 
-                // Draw Vertical markers for active nodes
                 const nodes = [
                     {x: frame.a, y: frame.fa}, {x: frame.d, y: frame.fd}, 
                     {x: frame.c, y: frame.fc}, {x: frame.e, y: frame.fe}, 
@@ -468,13 +509,21 @@
             const latexStr = mathField.getValue('latex');
             const mathStr = parseLatexToMathJS(latexStr);
             
-            const a = parseFloat(document.getElementById('bound-a').value);
-            const b = parseFloat(document.getElementById('bound-b').value);
+            const boundsStr = document.getElementById('bounds').value.split(',');
+            const a = parseFloat(boundsStr[0]);
+            const b = parseFloat(boundsStr[1]);
+            
             const tol = parseFloat(document.getElementById('tolerance').value);
+            const hmin = parseFloat(document.getElementById('hmin').value);
+
+            if (isNaN(a) || isNaN(b)) {
+                alert("Please enter bounds in 'a,b' format, e.g., -3,3");
+                return;
+            }
 
             try {
                 const compiledCode = math.compile(mathStr);
-                const results = runAdaptiveSimpson(compiledCode, a, b, tol);
+                const results = runAdaptiveSimpson(compiledCode, a, b, tol, hmin);
 
                 document.getElementById('results-box').style.display = 'table';
                 document.getElementById('res-approx').innerText = results.result.toFixed(8);
@@ -490,7 +539,6 @@
             }
         });
         
-        // Initial Canvas text matching the new font
         ctx.font = "16px 'Libertinus Math', system-ui, serif";
         ctx.fillText("Enter parameters and execute to begin simulation.", 220, 250);
     </script>
