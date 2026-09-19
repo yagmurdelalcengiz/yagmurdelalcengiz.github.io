@@ -1,0 +1,179 @@
+/* Base Reset and Typography */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: "Times New Roman", Times, serif;
+    background-color: #ffffff;
+    padding: 80px 20px 80px 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+/* 3D Drop-Shadow Menu Setup */
+.top-menu {
+    display: flex;
+    gap: 100px;
+    margin-bottom: 100px;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.menu-card {
+    display: inline-block;
+    background: #ffffff;
+    color: #000000;
+    text-decoration: none;
+    font-size: 1.1rem;
+    padding: 12px 35px;
+    border: 1px solid #000000;
+    box-shadow: 5px 5px 0px #000000;
+    transition: all 0.25s ease;
+}
+.menu-card.current {
+    background-color: #ffffff; 
+    color: #791ab4;            
+    border-color: #791ab4;
+    box-shadow: 5px 5px 0px #791ab4, 0px 0px 10px rgba(160, 32, 240, 0.50);
+}
+
+.menu-card:not(.current):hover {
+    border-color: #c171f3;
+    background-color: #ffffff;
+    color: #c171f3;
+    box-shadow: 5px 5px 0px #c171f3;
+    transform: translate(-2px, -2px);
+}
+
+
+
+
+.resume-container {
+    width: 100%;
+    max-width: 1000px;
+    
+}
+
+.resume-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    margin-bottom: 15px;
+}
+
+.name {
+    font-size: 2.6rem;
+    font-weight: normal;
+    letter-spacing: -0.5px;
+}
+
+.contact-info {
+    font-size: 12px;
+    padding-bottom: 4px;
+}
+
+/* Section Structuring */
+.resume-section {
+    margin-bottom: 12px;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Section Titles are now properly Bold */
+.section-heading {
+    font-size: 1.25rem;
+    font-weight: bold;
+    font-style: italic;
+    margin-bottom: 14px;
+    text-transform: capitalize; 
+}
+
+/* Layout alignment for internal contents */
+.static-content {
+    margin-bottom: 4px;
+}
+
+.split-layout {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    font-size: 1.1rem;
+    width: 100%;
+    margin-bottom: 4px;
+}
+
+.bold-row {
+    font-weight: normal; 
+}
+
+.right-side-meta {
+    display: flex;
+    gap: 15px;
+}
+
+/* Core Bullets adjustments */
+.resume-bullets {
+    padding-left: 17px;
+    margin-bottom: 6px;
+}
+
+.resume-bullets li {
+    font-size: 1.1rem;
+    margin-bottom: 4px;
+    list-style-type: disc;
+}
+
+/* Dropdown Animation Configurations */
+
+.internal-details {
+    margin-top: 4px;
+    margin-bottom: 4px;
+}
+
+/* Solid Separation Line - Now ordered at the bottom of the section */
+.divider-line {
+    order: 3; 
+    width: 100%;
+    height: 3.5px;
+    background-color: #000000;
+    margin-top: 0;             /* Removes the space between pink box and line */
+    transition: background-color 0.25s ease;
+}
+
+/* Purple Shift when Hovered */
+.resume-section:hover .divider-line {
+    background-color: #bb8dd8;
+}
+
+/* Update Dropdown Content to handle the layout structural wrapping */
+.dropdown-content {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.4s ease-out;
+    width: 100%;
+}
+
+/* Sharp-edged bright purple background with high contrast text */
+.dropdown-inner {
+    background-color: #f7eaff;  /* Lighter Pink Background */
+    color: #000000;             /* Dark text for high contrast on pink */
+    padding: 15px 15px 15px 0px;
+    margin: 0;                  /* Crucial: Removes all gaps before the line */
+    -webkit-mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 1) 25px);
+    mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 1) 25px);
+}
+
+/* Ensure links or bold elements inside the purple dropdown remain readable */
+.dropdown-inner strong, 
+.dropdown-inner em,
+.dropdown-inner li,
+.dropdown-inner .split-layout {
+    color: #000000;
+    font-size: 1.1rem;
+}
+
